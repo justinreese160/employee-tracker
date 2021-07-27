@@ -1,6 +1,6 @@
 var inquirer = require("inquirer");
 let connection;
-console.log(connection);
+
 const table = require("console.table");
 
 // var teamMembers = [];
@@ -36,7 +36,6 @@ const roleQuestions = [{
         name: "salary",
         message: "What is the role's salary?",
     },
-
 ];
 const employeeQuestions = [{
         type: "input",
@@ -58,10 +57,51 @@ const employeeQuestions = [{
         name: "last_name",
         message: "What is the employees last name?",
     },
-
 ];
+const managerQuestions = [{
+        type: "input",
+        name: "role_id",
+        message: "What is employee's role id?",
+    },
 
+    {
+        type: "input",
+        name: "first_name",
+        message: "What is employees first name?",
+    },
+    {
+        type: "input",
+        name: "last_name",
+        message: "What is the employees last name?",
+    },
+];
+const updateQuestions = [{
+        type: "input",
+        name: "update_id",
+        message: "What is employee's Id?",
+    },
+    {
+        type: "input",
+        name: "manager_id",
+        message: "What is employee's new manager's id? (leave blank if no manager)",
+    },
+    {
+        type: "input",
+        name: "role_id",
+        message: "What is employee's new role id?",
+    },
 
+    {
+        type: "input",
+        name: "first_name",
+        message: "What is employees new first name?",
+    },
+    {
+        type: "input",
+        name: "last_name",
+        message: "What is the employees new last name?",
+    },
+];
 
 const continueQuestions = [{
     type: "list",
@@ -75,6 +115,7 @@ const continueQuestions = [{
         "add department",
         "add employee",
         "update employee",
+        "quit",
     ],
 }, ];
 
@@ -97,9 +138,13 @@ function init() {
                 createRole();
                 break;
             case "add employee":
-                createEmployee()
+                createEmployee();
                 break;
             case "update employee":
+                updateEmployee();
+                break;
+            case "quit":
+                process.exit();
                 break;
 
             default:
@@ -109,70 +154,118 @@ function init() {
 }
 
 async function createRole() {
-    const role = await inquirer.prompt(roleQuestions)
-    console.log(role)
-    await connection.execute("INSERT INTO role (title, department_id, salary) VALUES (?,?,?) ", [role.title, role.department, role.salary], (err) => {
-        if (err) {
-            console.log("there was an error")
+    const role = await inquirer.prompt(roleQuestions);
 
+    await connection.execute(
+        "INSERT INTO role (title, department_id, salary) VALUES (?,?,?) ", [role.title, role.department, role.salary],
+        (err) => {
+            if (err) {
+                console.log("there was an error");
+            }
         }
-
-
-    })
-    console.log("success")
-    init()
+    );
+    console.log("success");
+    init();
 }
 
 async function createDepartment() {
-    const department = await inquirer.prompt(departmentQuestions)
-    console.log(department)
-    await connection.execute("INSERT INTO department (name) VALUES (?) ", [department.name], (err) => {
-        if (err) {
-            console.log("there was an error")
-
+    const department = await inquirer.prompt(departmentQuestions);
+    console.log(department);
+    await connection.execute(
+        "INSERT INTO department (name) VALUES (?) ", [department.name],
+        (err) => {
+            if (err) {
+                console.log("there was an error");
+            }
         }
-
-
-    })
-    console.log("success")
-    init()
+    );
+    console.log("success");
+    init();
 }
 
 async function createEmployee() {
-    const employee = await inquirer.prompt(employeeQuestions)
-    console.log(employee)
-    await connection.execute("INSERT INTO department (role_id, manager_id, firstName, lastName, ) VALUES (?,?,?,?) ", [employee.role_id, employee.manager_id, employee.firstName, employee.lastName], (err) => {
-        if (err) {
-            console.log("there was an error")
-
-        }
-
-
-    })
-    console.log("success")
-    init()
+    const employee = await inquirer.prompt([{
+        type: "list",
+        name: "manager",
+        message: "Is this employee a manager?",
+        choices: ["yes", "No"],
+    }, ]);
+    console.log(employee);
+    if (employee.manager === "yes") {
+        const manager = await inquirer.prompt(managerQuestions);
+        await connection.execute(
+            "INSERT INTO employee (role_id, first_name, last_name) VALUES (?,?,?) ", [manager.role_id, manager.first_name, manager.last_name],
+            (err) => {
+                if (err) {
+                    console.log("there was an error");
+                }
+            }
+        );
+    } else {
+        const employee = await inquirer.prompt(employeeQuestions);
+        await connection.execute(
+            "INSERT INTO employee (role_id, manager_id, first_name, last_name) VALUES (?,?,?,?) ", [
+                employee.role_id,
+                employee.manager_id,
+                employee.first_name,
+                employee.last_name,
+                employee.update_id,
+            ],
+            (err) => {
+                if (err) {
+                    console.log("there was an error");
+                }
+            }
+        );
+    }
+    console.log("success");
+    init();
 }
-
-
-
 
 async function getAllDepartments() {
     const [rows, fields] = await connection.execute("SELECT * FROM department");
     console.log(rows);
     console.table(rows);
+    init();
 }
 
 async function getAllRoles() {
-    const [rows, fields] = await connection.execute("SELECT * FROM roles");
+    const [rows, fields] = await connection.execute(
+        "SELECT * FROM role INNER JOIN department ON role.department_id = department.id"
+    );
     console.log(rows);
     console.table(rows);
+    init();
 }
 
 async function getAllEmployees() {
-    const [rows, fields] = await connection.execute("SELECT * FROM employees");
+    const [rows, fields] = await connection.execute(
+        "SELECT * FROM employee INNER JOIN role ON employee.role_id = role.id"
+    );
     console.log(rows);
     console.table(rows);
+    init();
 }
+
+async function updateEmployee() {
+    const employee = await inquirer.prompt(updateQuestions);
+    if (employee.manager_id === "") {
+        employee.manager_id = null;
+    }
+    const [rows, fields] = await connection.execute(
+        "UPDATE employee SET first_name=?,last_name=?,manager_id=?,role_id=? WHERE id=?", [
+            employee.first_name,
+            employee.last_name,
+            employee.manager_id,
+            employee.role_id,
+            employee.update_id,
+        ]
+    );
+    console.log("employee was updated.");
+    init();
+}
+
+
 
 main().then(() => {
     init();
