@@ -1,9 +1,9 @@
 var inquirer = require("inquirer");
-let connection
-console.log(connection)
+let connection;
+console.log(connection);
 const table = require("console.table");
 
-var teamMembers = [];
+// var teamMembers = [];
 const mysql2 = require("mysql2/promise");
 
 async function main() {
@@ -13,78 +13,55 @@ async function main() {
         database: "employee_tracker_db",
         password: "root123",
     });
-    // query database
-    // const [rows, fields] = await connection.execute('SELECT * FROM `table` WHERE `name` = ? AND `age` > ?', ['Morty', 14]);
 }
 
+const departmentQuestions = [{
+    type: "input",
+    name: "name",
+    message: "What is the name of the department?",
+}, ];
 
-
-
-const internQuestions = [{
+const roleQuestions = [{
         type: "input",
-        name: "name",
-        message: "What is employee's name?",
+        name: "department",
+        message: "What is the role's department ID number?",
     },
     {
         type: "input",
-        name: "Id",
-        message: "What is employee's Id?",
+        name: "title",
+        message: "What is the role's title?",
     },
     {
         type: "input",
-        name: "email",
-        message: "What is employee's email?",
+        name: "salary",
+        message: "What is the role's salary?",
+    },
+
+];
+const employeeQuestions = [{
+        type: "input",
+        name: "role_id",
+        message: "What is employee's role id?",
     },
     {
         type: "input",
-        name: "school",
-        message: "What is interns school?",
+        name: "manager_id",
+        message: "What is employees manager id?",
     },
+    {
+        type: "input",
+        name: "first_name",
+        message: "What is employees first name?",
+    },
+    {
+        type: "input",
+        name: "last_name",
+        message: "What is the employees last name?",
+    },
+
 ];
 
-const managerQuestions = [{
-        type: "input",
-        name: "name",
-        message: "What is employee's name?",
-    },
-    {
-        type: "input",
-        name: "Id",
-        message: "What is employee's Id?",
-    },
-    {
-        type: "input",
-        name: "email",
-        message: "What is employee's email?",
-    },
-    {
-        type: "input",
-        name: "officeNumber",
-        message: "What is manager's office number?",
-    },
-];
 
-const engineerQuestions = [{
-        type: "input",
-        name: "name",
-        message: "What is employee's name?",
-    },
-    {
-        type: "input",
-        name: "Id",
-        message: "What is employee's Id?",
-    },
-    {
-        type: "input",
-        name: "email",
-        message: "What is employee's email?",
-    },
-    {
-        type: "input",
-        name: "gitHub",
-        message: "What is engineer's git hub?",
-    },
-];
 
 const continueQuestions = [{
     type: "list",
@@ -105,19 +82,24 @@ function init() {
     inquirer.prompt(continueQuestions).then(function(answers) {
         switch (answers.type) {
             case "view all roles":
+                getAllRoles();
                 break;
             case "view all departments":
-                getAllDepartments()
+                getAllDepartments();
                 break;
             case "view all employees":
+                getAllEmployees();
                 break;
             case "add department":
+                createDepartment();
+                break;
+            case "add role":
+                createRole();
                 break;
             case "add employee":
+                createEmployee()
                 break;
             case "update employee":
-                break;
-            case "view all roles":
                 break;
 
             default:
@@ -126,55 +108,72 @@ function init() {
     });
 }
 
-function createEngineer(role) {
-    inquirer.prompt(engineerQuestions).then(function(answers) {
-        var newEngineer = new Engineer(
-            answers.name,
-            answers.Id,
-            answers.email,
-            answers.gitHub,
-            role
-        );
-        teamMembers.push(newEngineer);
-        init();
-    });
+async function createRole() {
+    const role = await inquirer.prompt(roleQuestions)
+    console.log(role)
+    await connection.execute("INSERT INTO role (title, department_id, salary) VALUES (?,?,?) ", [role.title, role.department, role.salary], (err) => {
+        if (err) {
+            console.log("there was an error")
+
+        }
+
+
+    })
+    console.log("success")
+    init()
 }
 
-function createManager(role) {
-    inquirer.prompt(managerQuestions).then(function(answers) {
-        var newManager = new Manager(
-            answers.name,
-            answers.Id,
-            answers.email,
-            answers.officeNumber,
-            role
-        );
-        teamMembers.push(newManager);
-        init();
-    });
+async function createDepartment() {
+    const department = await inquirer.prompt(departmentQuestions)
+    console.log(department)
+    await connection.execute("INSERT INTO department (name) VALUES (?) ", [department.name], (err) => {
+        if (err) {
+            console.log("there was an error")
+
+        }
+
+
+    })
+    console.log("success")
+    init()
 }
 
-function createIntern(role) {
-    inquirer.prompt(internQuestions).then(function(answers) {
-        var newIntern = new Intern(
-            answers.name,
-            answers.Id,
-            answers.email,
-            answers.school,
-            role
-        );
-        teamMembers.push(newIntern);
-        init();
-    });
+async function createEmployee() {
+    const employee = await inquirer.prompt(employeeQuestions)
+    console.log(employee)
+    await connection.execute("INSERT INTO department (role_id, manager_id, firstName, lastName, ) VALUES (?,?,?,?) ", [employee.role_id, employee.manager_id, employee.firstName, employee.lastName], (err) => {
+        if (err) {
+            console.log("there was an error")
+
+        }
+
+
+    })
+    console.log("success")
+    init()
 }
+
+
+
 
 async function getAllDepartments() {
-    const [rows, fields] = await connection.execute("SELECT * FROM department")
+    const [rows, fields] = await connection.execute("SELECT * FROM department");
     console.log(rows);
-    console.table(rows)
+    console.table(rows);
+}
 
+async function getAllRoles() {
+    const [rows, fields] = await connection.execute("SELECT * FROM roles");
+    console.log(rows);
+    console.table(rows);
+}
+
+async function getAllEmployees() {
+    const [rows, fields] = await connection.execute("SELECT * FROM employees");
+    console.log(rows);
+    console.table(rows);
 }
 
 main().then(() => {
-    init()
-})
+    init();
+});
