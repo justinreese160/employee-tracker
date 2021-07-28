@@ -194,7 +194,7 @@ async function createEmployee() {
     if (employee.manager === "yes") {
         const manager = await inquirer.prompt(managerQuestions);
         await connection.execute(
-            "INSERT INTO employee (role_id, first_name, last_name) VALUES (?,?,?) ", [manager.role_id, manager.first_name, manager.last_name],
+            "INSERT INTO employee (role_id, manager_id, first_name, last_name) VALUES (?,?,?,?) ", [manager.role_id, null, manager.first_name, manager.last_name],
             (err) => {
                 if (err) {
                     console.log("there was an error");
@@ -203,13 +203,14 @@ async function createEmployee() {
         );
     } else {
         const employee = await inquirer.prompt(employeeQuestions);
+        let managerId = employee.manager_id || null;
         await connection.execute(
             "INSERT INTO employee (role_id, manager_id, first_name, last_name) VALUES (?,?,?,?) ", [
                 employee.role_id,
-                employee.manager_id,
+                managerId,
                 employee.first_name,
                 employee.last_name,
-                employee.update_id,
+
             ],
             (err) => {
                 if (err) {
@@ -231,7 +232,7 @@ async function getAllDepartments() {
 
 async function getAllRoles() {
     const [rows, fields] = await connection.execute(
-        "SELECT * FROM role INNER JOIN department ON role.department_id = department.id"
+        "SELECT * FROM role"
     );
     console.log(rows);
     console.table(rows);
@@ -240,7 +241,7 @@ async function getAllRoles() {
 
 async function getAllEmployees() {
     const [rows, fields] = await connection.execute(
-        "SELECT * FROM employee INNER JOIN role ON employee.role_id = role.id"
+        "SELECT * FROM employee"
     );
     console.log(rows);
     console.table(rows);
